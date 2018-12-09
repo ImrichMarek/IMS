@@ -12,14 +12,17 @@
 #include <cstdio>
 #include <cstring>
 
-#define END_TIME 1000		    //cas simulacie
+#define SIM_TIME 1000		    //cas simulacie
 #define WORK_TIME 8             //cas pracovnej doby
 #define NON_WORK_TIME 16        //cas mimopracovnej doby
 #define SET_MACHINE_TIME 1      //cas nastavenia stroja
 #define REPAIR_TIME 1           //cas opravy / vymeny suciastky stroja
-#define RANDOM_FAILURE_TIME 240  //cas vyskytu nahodnej chyby exp()
+#define RANDOM_FAILURE_TIME 240 //cas vyskytu nahodnej chyby exp()
 
+#define LATHE 2                 //pocet sustruhov
+#define CUTTER 1                //pocet frez
 #define ROTATIONS 1             //pocet otacok
 #define PIECES_NB 100           //pocet kusov
-
-void OpenNewDesk();
+#define LATHE_CAPACITY 1        //kapacita prveho stroja
+#define CUTTER_CAPACITY 12      //kapacita druheho stroja
+#define REPAIR_TIME 5           //čas opravy po chybe

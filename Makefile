@@ -9,12 +9,16 @@
 CC =g++
 CFLAGS = -g -O2
 NAME = main
+OUTPUT = ims
 
 all: $(NAME).cpp $(NAME).h
-	$(CC) $(CFLAGS) -o $(NAME) $(NAME).cpp -lsimlib -lm 
+	$(CC) $(CFLAGS) -o $(OUTPUT) $(NAME).cpp -lsimlib -lm 
 
-run: $(NAME)
-	./$(NAME)
+run: $(OUTPUT)
+	./$(OUTPUT)
+
+clean:
+	rm -f ims
 
 tar:
 	tar -zcvf 04_xlabas00_xbanca00.tar.gz $(NAME).cpp $(NAME).h Makefile doc.pdf
