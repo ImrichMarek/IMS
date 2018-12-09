@@ -20,5 +20,5 @@ run: $(OUTPUT)
 clean:
 	rm -f ims
 
-tar:
-	tar -zcvf 05_xlabas00_xbanca00.tar.gz $(NAME).cpp $(NAME).h Makefile doc.pdf
+zip:
+	zip 05_xmoros01_ximric01.zip $(NAME).cpp $(NAME).h Makefile doc.pdf
