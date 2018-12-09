@@ -201,6 +201,6 @@ int main() {
     
     std::cout<<"Počet kusov, ktore vyrobila fréza bol: "<<cutter_products*CUTTER_CAPACITY<<".\n";
     std::cout<<"Počet chýb, kedy zlyhanie zapríčinila fréza bolo: "<<cutterFailureCnt*CUTTER_CAPACITY<<".\n";
-    
+
 	return 0;
 }
