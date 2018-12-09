@@ -10,10 +10,12 @@
 
 #include "main.h"
 
-//Facility counter("Product counter");
 Facility lathe("lathe");
 Facility cutter("cutter");
-//Histogram Table("Table",0,25,20);
+
+Store inputMaterial1("vstupny_materia_sustruhu", std::numeric_limits<unsigned long>::max());
+Store inputMaterial2("vstupny_materia_frezy", std::numeric_limits<unsigned long>::max());
+Store product("vystupny_produkt", std::numeric_limits<unsigned long>::max());
 
 const int hodina = 60; //hodina ->60 minut
 const int den = 1440; //hodina ->1440 minut
@@ -21,48 +23,6 @@ const int rok = 525600; //hodina ->525600 minut
 int machFailureCnt = 0;
 bool machFailureSet = false;
 bool workTime = false;
-
-int working_lathe = 0;
-int working_cutter = 0;
-int inserted_mtr = 0;
-int lathe_products = 0;
-int cutter_products = 0;
-
-
-Queue queue_material1; //material pre obrabanie
-Queue queue_material2; //material pre frezovanmie
-Queue queue_lathe[100]; //
-
-//Denny cyklus -> 8 hodinova pracovna doba
-class Day_cycle : public Event {
-    void Behavior() {
-        if(workTime) {
-            workTime = false;
-            Activate(Time + (NON_WORK_TIME * hodina));
-        }
-        else {
-            workTime = true;
-            (new Steel_generator())->Activate();
-            Activate(Time + (WORK_TIME * hodina));
-        }
-    }
-};
-
-//Generator nahodnej chyby sustruhu exp()
-class Lathe_failure_generator : public Event {
-    void Behavior() {
-        (new Lathe_failure)->Activate();
-        Activate(Time + Exponential(RANDOM_FAILURE_TIME));
-    }
-};
-
-//Generator nahodnej chyby frezy exp()
-class Cutter_failure_generator : public Event {
-    void Behavior() {
-        (new Cutter_failure)->Activate();
-        Activate(Time + Exponential(RANDOM_FAILURE_TIME));
-    }
-};
 
 class Lathe_failure : public Process {
     void Behavior() {
@@ -82,157 +42,105 @@ class Cutter_failure : public Process {
     }
 };
 
-//generator sustruhov
-class Lathe_generator : public Event {
-    void Behavior() {
-        if(workTime && (working_lathe < LATHE_NB)) {
-            (new Lathe)->Activate();
-            working_lathe++;
-            Activate(Time + workTime);
-        }
-    }
-};
-
-//generator frez
-class Cutter_generator : public Event {
-    void Behavior() {
-        if(workTime && (working_cutter < CUTTER_NB)) {
-            (new Cutter)->Activate();
-            working_cutter++;
-            Activate(Time + workTime);
-        }
-    }
-};
-
-class Steel_generator : public Event {
-    int steelNB = 0;
-    int piecesNB = PIECES_NB;
-    void Behavior() {
-        (new Steel)->Activate();
-        steelNB++;
-        
-        if (steelNB < PIECES_NB) {
-            Activate(Time + Uniform(0,2));
-        }
-    }
-    public:
-        Steel_generator(int stl) : piecesNB(stl) {
-            steelNB = 0;
-            Activate();
-        }
-};
-
-class Insert_steel : public Event {
-    void Behavior() {
-        while (!queue_material1.Empty()) {
-            bool full = false;
-            for(int i = 0; i < LATHE_NB; i++) {
-                if(queue_lathe[i].Length() >= LATHE_CAPACITY) {
-                    full = true;
-                    for(int j=0; j < LATHE_CAPACITY; j++) {
-                        queue_lathe[i].GetFirst()->Activate();
-                    }
-                    break;
-                }
-            }
-            if (full) {
-                (queue_material1.GetFirst())->Activate();
-            }
-            else {
-                break;
-            }
-        }
-        Activate(Time + 5);
-    }
-};
-
-class Lathe : public Process {
+class Linkk : public Process {
     double startTime;
     double endTime;
+    public : int workst;
+    public : int lathe_products;
+    public : int cutter_products;
     void Behavior() {
         startTime = Time;
-        while(1) {
-            if(workTime) { //ak neskoncila pracovna doba
-                Wait(30);
+        if (workst == 1) {
+            Lathe();
+        }
+        if (workst == 2) {
+            Cutter();
+        }
+    }
+    
+    void Lathe() {
+        if(workTime) { //ak neskoncila pracovna doba
+            bool failure = false;
+            Leave(inputMaterial1, LATHE_CAPACITY);
+            for(int i = 0; i < 3; i++) {
                 double d = Random(); //1% -> chybny kus
-                if (d < 0.01) { //nastala chyba
-                    (new Repair_lathe)->Activate();
+                if (d < 0.01 || lathe_products == LATHE_HARD_REPAIR) { //nastala chyba
+                    (new Lathe_failure)->Activate();
+                    failure = true;
                 }
-                else { //nenastala chyba
-                    (new Cutter_generator)->Activate();
-                    if (lathe_products = 270) { //po 270 kusoch nutena vymena brusky
-                        (new Repair_lathe)->Activate();
-                    }
+            }
+            if (!failure) {
+                lathe_products++;
+                Enter(inputMaterial2, 1);
+            }
+        }
+    }
+
+    void Cutter() {
+        if(workTime) { //ak neskoncila pracovna doba
+            bool failure = false;
+            Leave(inputMaterial2, CUTTER_CAPACITY);
+            for(int i = 0; i < 2; i++) {
+                double d = Random(); //1% -> chybny kus
+                if (d < 0.01 || lathe_products == CUTTER_HARD_REPAIR) { //nastala chyba
+                    (new Cutter_failure)->Activate();
+                    failure = true;
                 }
+            }
+            if (!failure) {
+                cutter_products++;
+                Enter(product, 12);
             }
         }
     }
 };
 
-class Cutter : public Process {
-    double startTime;
-    double endTime;
+//nalní "store" vstupnym materialom
+class Insert_steel : public Process {
     void Behavior() {
-        startTime = Time;
-        while(1) {
-            if(workTime) { //ak neskoncila pracovna doba
-                Wait(30);
-                double d = Random(); //1% -> chybny kus
-                if (d < 0.01) { //nastala chyba
-                    (new Repair_cutter)->Activate();
-                }
-                else { //nenastala chyba
-                        cutter_products++;
-                }
-            }
+        Enter(inputMaterial1, PIECES_NB);
+    }
+};
+
+//Denny cyklus -> 8 hodinova pracovna doba
+class Day_cycle : public Event {
+    void Behavior() {
+        if(!workTime) {
+            workTime = true;
+            (new Insert_steel)->Activate();
+            Activate(Time + (WORK_TIME * hodina));
+        }
+        else {
+            workTime = false;
+            Activate(Time + (NON_WORK_TIME * hodina));
         }
     }
 };
 
-class Steel : public Process {
+//generator výrobných liniek
+class Link_generator : public Event {
+    Linkk* lnk;
     void Behavior() {
-        double insert_time = Time;
-        inserted_mtr++;
-        
-        //material ide do sustruhu, kontrola ci je nejaky dostupny
-        if (working_lathe == 0) {
-                queue_material1.Insert(this);
-                Passivate();
+        for (int i = 0; i < (LATHE_NB); i++) {
+            lnk = new Linkk;
+            lnk->workst = 1; //start lathe
+            lnk->Activate();
         }
         
-    }
-};
-
-class Repair_lathe : public Process {
-    void Behavior() {
-        machFailureCnt++;
-        Seize(lathe);
-        Wait(Exponential(REPAIR_TIMEOUT));
-        Release(lathe);
-    }
-};
-
-class Repair_cutter : public Process {
-    void Behavior() {
-        machFailureCnt++;
-        Seize(cutter);
-        Wait(Exponential(REPAIR_TIMEOUT));
-        Release(cutter);
+        for (int i = 0; i < (CUTTER_NB); i++) {
+            lnk = new Linkk;
+            lnk->workst = 1; //start cutter
+            lnk->Activate();
+        }
     }
 };
 
 int main() {
     Init(0, SIM_TIME); //cas simulacie 0..SIM_TIME
     (new Day_cycle)->Activate();
-    (new Lathe_failure_generator)->Activate();
-    (new Cutter_failure_generator)->Activate();
-    (new Lathe_generator)->Activate();
-    (new Cutter_generator)->Activate();
-    (new Insert_steel)->Activate();
+    (new Link_generator)->Activate();
     
 	Run();
-
-    //Table.Output();
 
 	return 0;
 }
