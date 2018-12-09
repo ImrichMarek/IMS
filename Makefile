@@ -21,4 +21,4 @@ clean:
 	rm -f ims
 
 tar:
-	tar -zcvf 04_xlabas00_xbanca00.tar.gz $(NAME).cpp $(NAME).h Makefile doc.pdf
+	tar -zcvf 05_xlabas00_xbanca00.tar.gz $(NAME).cpp $(NAME).h Makefile doc.pdf
